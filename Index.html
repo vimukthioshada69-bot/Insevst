@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pro Income Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="manifest" href="manifest.json">
+
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
+}
+</script>
+<style>
+body { font-family: Arial; background:#0f172a; color:white; padding:15px;}
+.card { background:#1e293b; padding:15px; margin:10px 0; border-radius:12px;}
+input { width:100%; padding:10px; margin:5px 0; border-radius:6px; border:none;}
+button { padding:10px; margin-top:5px; width:100%; background:#22c55e; border:none; color:white; border-radius:6px;}
+h2 { color:#38bdf8;}
+.item { background:#334155; padding:8px; margin:5px 0; border-radius:6px;}
+.smallBtn { width:auto; padding:5px; margin-left:5px; background:#ef4444;}
+</style>
+</head>
+
+<body>
+
+<h1>🚀 Pro Side Income Dashboard</h1>
+
+<!-- DAILY -->
+<div class="card">
+<h2>📅 Daily</h2>
+<input id="videos" type="number" placeholder="Videos">
+<input id="dms" type="number" placeholder="DMs">
+<input id="earn" type="number" placeholder="Earnings">
+<button onclick="addDaily()">Add Daily</button>
+</div>
+
+<!-- CLIENT -->
+<div class="card">
+<h2>👤 Clients</h2>
+<input id="clientName" placeholder="Name">
+<input id="clientWork" placeholder="Work">
+<input id="clientPrice" type="number" placeholder="Price">
+<button onclick="addClient()">Add Client</button>
+<div id="clientList"></div>
+</div>
+
+<!-- PRODUCT -->
+<div class="card">
+<h2>📦 Products</h2>
+<input id="productName" placeholder="Product">
+<input id="productPrice" type="number" placeholder="Price">
+<button onclick="addProduct()">Add Product</button>
+<div id="productList"></div>
+</div>
+
+<!-- SUMMARY -->
+<div class="card">
+<h2>📊 Summary</h2>
+<p>Videos: <span id="totalVideos">0</span></p>
+<p>DMs: <span id="totalDMs">0</span></p>
+<p>Earnings: Rs. <span id="totalEarn">0</span></p>
+<button onclick="resetWeek()">🔄 Reset Week</button>
+</div>
+
+<!-- CHART -->
+<div class="card">
+<h2>📈 Earnings Chart</h2>
+<canvas id="chart"></canvas>
+</div>
+
+<script>
+let data = JSON.parse(localStorage.getItem("proDash")) || {
+  videos:0, dms:0, earn:0,
+  clients:[], products:[],
+  history:[]
+};
+
+function save() {
+  localStorage.setItem("proDash", JSON.stringify(data));
+}
+
+function addDaily() {
+  let v = +videos.value || 0;
+  let d = +dms.value || 0;
+  let e = +earn.value || 0;
+
+  data.videos += v;
+  data.dms += d;
+  data.earn += e;
+  data.history.push(e);
+
+  save();
+  render();
+}
+
+function addClient() {
+  data.clients.push({
+    name: clientName.value,
+    work: clientWork.value,
+    price: clientPrice.value
+  });
+  save();
+  render();
+}
+
+function addProduct() {
+  data.products.push({
+    name: productName.value,
+    price: productPrice.value
+  });
+  save();
+  render();
+}
+
+function deleteClient(i){
+  data.clients.splice(i,1);
+  save(); render();
+}
+
+function deleteProduct(i){
+  data.products.splice(i,1);
+  save(); render();
+}
+
+function resetWeek(){
+  if(confirm("Reset all weekly data?")){
+    data = {videos:0,dms:0,earn:0,clients:[],products:[],history:[]};
+    save(); render();
+  }
+}
+
+function render(){
+  totalVideos.innerText = data.videos;
+  totalDMs.innerText = data.dms;
+  totalEarn.innerText = data.earn;
+
+  clientList.innerHTML = data.clients.map((c,i)=>
+    `<div class="item">${c.name} - ${c.work} - Rs.${c.price}
+     <button class="smallBtn" onclick="deleteClient(${i})">X</button></div>`
+  ).join("");
+
+  productList.innerHTML = data.products.map((p,i)=>
+    `<div class="item">${p.name} - Rs.${p.price}
+     <button class="smallBtn" onclick="deleteProduct(${i})">X</button></div>`
+  ).join("");
+
+  drawChart();
+}
+
+let chart;
+function drawChart(){
+  if(chart) chart.destroy();
+  chart = new Chart(document.getElementById("chart"), {
+    type: 'line',
+    data: {
+      labels: data.history.map((_,i)=>"Day "+(i+1)),
+      datasets: [{
+        label: 'Earnings',
+        data: data.history
+      }]
+    }
+  });
+}
+
+render();
+</script>
+
+</body>
+</html>
